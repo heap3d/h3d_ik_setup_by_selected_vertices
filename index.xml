@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package version="801">
+	<kit name="h3d_ik_setup_by_selected_vertices" restart="YES">
+		<source target="h3d_ik_setup_by_selected_vertices/index.cfg">index.cfg</source>
+		<source target="h3d_ik_setup_by_selected_vertices/index.xml">index.xml</source>
+		<source target="h3d_ik_setup_by_selected_vertices/scripts/ik_setup_by_selected_vertices.py">scripts/ik_setup_by_selected_vertices.py</source>
+	</kit>
+	<message button="Help">h3d_ik_setup_by_selected_vertices Kit installation complete.</message>
+</package>
