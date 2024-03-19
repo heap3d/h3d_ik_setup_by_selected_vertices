@@ -18,6 +18,7 @@ from h3d_utilites.scripts.h3d_debug import H3dDebug
 
 def new_loc_at_vert(vertex: modo.meshgeometry.MeshVertex, parent: Union[modo.Item, None]) -> modo.Item:
     locator = modo.Scene().addItem(itype=c.LOCATOR_TYPE)
+    locator.select(replace=True)
     lx.eval('item.channel locator$size 0.0')
     locator.position.set(vertex.position)
     if not parent:
