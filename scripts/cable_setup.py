@@ -5,101 +5,192 @@
 # --------------------------------
 # modo python
 # create cable setup
+# usage:
+# - select curve mesh
+# - run command
 
 import lx
 import modo
 import modo.constants as c
+import re
+
+from h3d_utilites.scripts.h3d_utils import replace_file_ext
+from h3d_utilites.scripts.h3d_debug import H3dDebug
 
 
 CABLE_SHAPE_NAME = 'h3d_cable_shape_circle'
+DEFAULT_DIAMETER = 0.01
+DEFAULT_STEPS = 24
 
 
-def create_cable_shape() -> modo.Item:
-    lx.eval('layer.new')
-    shape: modo.Item
-    shape, = modo.Scene().selectedByType(c.MESH_TYPE)
-    if not shape:
-        raise RuntimeError('Error creating cable shape')
-    lx.eval('tool.set prim.cylinder on')
-    lx.eval('tool.setAttr prim.cylinder cenX 0.0')
-    lx.eval('tool.setAttr prim.cylinder cenY 0.0')
-    lx.eval('tool.setAttr prim.cylinder cenZ 0.0')
-    lx.eval('tool.setAttr prim.cylinder sizeX 0.5')
-    lx.eval('tool.setAttr prim.cylinder sizeY 0.0')
-    lx.eval('tool.setAttr prim.cylinder sizeZ 0.5')
-    lx.eval('tool.setAttr prim.cylinder axis y')
-    lx.eval('tool.setAttr prim.cylinder sides 8')
-    lx.eval('tool.doApply')
-    lx.eval('tool.set prim.cylinder off 0')
-    shape.name = CABLE_SHAPE_NAME
+class CableLive:
+    def __init__(self, mesh: modo.Item) -> None:
+        self.shape_size = DEFAULT_DIAMETER
+        self.cable_steps = DEFAULT_STEPS
+        self.flip = False
+        self.material_tag = ''
 
-    return shape
+    def decode_data_from_name(self):
+        ...
+
+    def encode_data_to_name(self):
+        ...
+
+    def generate_cable(self):
+        ...
+
+    def strip_cable_meshops(self):
+        ...
+
+    @staticmethod
+    def create_cable_shape() -> modo.Item:
+        lx.eval('layer.new')
+        shape: modo.Item
+        (shape,) = scene.selectedByType(c.MESH_TYPE)
+        if not shape:
+            raise RuntimeError('Error creating cable shape')
+        lx.eval('tool.set prim.cylinder on')
+        lx.eval('tool.setAttr prim.cylinder cenX 0.0')
+        lx.eval('tool.setAttr prim.cylinder cenY 0.0')
+        lx.eval('tool.setAttr prim.cylinder cenZ 0.0')
+        lx.eval('tool.setAttr prim.cylinder sizeX 0.5')
+        lx.eval('tool.setAttr prim.cylinder sizeY 0.0')
+        lx.eval('tool.setAttr prim.cylinder sizeZ 0.5')
+        lx.eval('tool.setAttr prim.cylinder axis y')
+        lx.eval('tool.setAttr prim.cylinder sides 8')
+        lx.eval('tool.doApply')
+        lx.eval('tool.set prim.cylinder off 0')
+        shape.name = CABLE_SHAPE_NAME
+
+        return shape
+
+    @staticmethod
+    def get_cable_shape():
+        try:
+            return scene.item(CABLE_SHAPE_NAME)
+
+        except LookupError:
+            return CableLive.create_cable_shape()
+
+    @staticmethod
+    def is_general_curve(mesh):
+        curves = mesh.geometry.polygons.iterByType('CURV')
+        beziers = mesh.geometry.polygons.iterByType('BEZR')
+        bsplines = mesh.geometry.polygons.iterByType('BSPL')
+
+        return any((curves, beziers, bsplines))
 
 
-def is_general_curve(mesh):
-    curves = mesh.geometry.polygons.iterByType('CURV')
-    beziers = mesh.geometry.polygons.iterByType('BEZR')
-    bsplines = mesh.geometry.polygons.iterByType('BSPL')
+def decode_name(name):
+    pattern = r".*\[(\d+)?\s?:?\s?(.*)\]"
+    result: list[str] = re.findall(pattern, name)
+    if not result:
+        h3dd.print_debug(f'not result: {result = }')
+        return DEFAULT_DIAMETER, ''
 
-    return any((curves, beziers, bsplines))
+    if len(result) == 1:
+        if result[0].isdigit():
+            h3dd.print_debug(f'{len(result) = } {result = }')
+            return float(result[0]), ''
+
+        else:
+            h3dd.print_debug(f'else len: {len(result) = } {result = }')
+            return DEFAULT_DIAMETER, result[0]
+
+    else:
+        h3dd.print_debug(f'else: {result = }')
+        return float(result[0]), result[1]
 
 
-def get_cable_shape():
-    try:
-        return modo.Scene().item(CABLE_SHAPE_NAME)
-    except LookupError:
-        return create_cable_shape()
-
-
-def create_cable(curve, shape):
-    if not is_general_curve(curve):
-        print(f'Cable creation skipped for mesh <{curve.name}>. No curve found.')
+def create_cable(curve_mesh, shape):
+    if not CableLive.is_general_curve(curve_mesh):
+        print(f'Cable creation skipped for mesh <{curve_mesh.name}>. No curve found.')
         return
-
+    # stroe preset browser status
+    preset_browser_opened = lx.eval(
+        'layout.createOrClose PresetBrowser presetBrowserPalette ?'
+    )
+    if not preset_browser_opened:
+        lx.eval(
+            'layout.createOrClose PresetBrowser presetBrowserPalette true Presets '
+            'width:800 height:600 persistent:true style:palette'
+        )
     # create curve sweep meshop
-    cable_name = f'{curve.name}_cable'
-    cable = modo.Scene().addMesh(cable_name)
+    cable_name = f'{curve_mesh.name}_cable'
+    cable = scene.addMesh(cable_name)
     cable.select(replace=True)
-    lx.eval('select.filepath "[itemtypes]:MeshOperations/curve/curve.sweep.itemtype" set')
-    lx.eval('select.preset "[itemtypes]:MeshOperations/curve/curve.sweep.itemtype" mode:set')
+    lx.eval(
+        'select.filepath "[itemtypes]:MeshOperations/curve/curve.sweep.itemtype" set'
+    )
+    lx.eval(
+        'select.preset "[itemtypes]:MeshOperations/curve/curve.sweep.itemtype" mode:set'
+    )
     lx.eval('preset.do')
-    curve_sweep, = modo.Scene().selectedByType(itype='curve.sweep')
-    lx.eval(f'item.link curve.sweep.path {curve.id} {curve_sweep.id} posT:0 replace:false')
-    lx.eval(f'item.link curve.sweep.prof {shape.id} {curve_sweep.id} posT:0 replace:false')
+    curve_sweep = scene.selectedByType(itype='curve.sweep')[0]
+    lx.eval(
+        f'item.link curve.sweep.path {curve_mesh.id} {curve_sweep.id} posT:0 replace:false'
+    )
+    lx.eval(
+        f'item.link curve.sweep.prof {shape.id} {curve_sweep.id} posT:0 replace:false'
+    )
     curve_sweep.select(replace=True)
     lx.eval('item.channel (anySweeper)$extrudeShape linked')
     lx.eval('item.channel (anySweeper)$useSize false')
-    # lx.eval(f'item.channel (anySweeper)$size {cable_shape_size}')
-    # lx.eval(f'item.channel (anySweeper)$steps {cable_steps}')
-    # lx.eval(f'item.channel (anySweeper)$flip {flip}')
     # create material tag meshop
     cable.select(replace=True)
-    lx.eval('select.filepath "[itemtypes]:MeshOperations/polygon/pmodel.materialTag.item.itemtype" set')
-    lx.eval('select.preset "[itemtypes]:MeshOperations/polygon/pmodel.materialTag.item.itemtype" mode:set')
+    lx.eval(
+        'select.filepath "[itemtypes]:MeshOperations/polygon/pmodel.materialTag.item.itemtype" set'
+    )
+    lx.eval(
+        'select.preset "[itemtypes]:MeshOperations/polygon/pmodel.materialTag.item.itemtype" mode:set'
+    )
     lx.eval('preset.do')
-    # lx.eval(f'item.channel pmodel.materialTag.item$materialName {material_tag}')
+    material_tag_node = scene.selectedByType(itype='pmodel.materialTag.item')[0]
     # create set polygon type meshop
-    lx.eval('select.filepath "[itemtypes]:MeshOperations/polygon/poly.setType.meshop.item.itemtype" set')
-    lx.eval('select.preset "[itemtypes]:MeshOperations/polygon/poly.setType.meshop.item.itemtype" mode:set')
+    lx.eval(
+        'select.filepath "[itemtypes]:MeshOperations/polygon/poly.setType.meshop.item.itemtype" set'
+    )
+    lx.eval(
+        'select.preset "[itemtypes]:MeshOperations/polygon/poly.setType.meshop.item.itemtype" mode:set'
+    )
     lx.eval('preset.do')
     lx.eval('item.channel poly.setType.meshop.item$type subd')
     # create controls
+    diameter, material_tag_name = decode_name(curve_mesh.name)
+    material_tag_name = material_tag_name.strip()
     cable.select(replace=True)
-    lx.eval('channel.create shapesize distance username:"shape size"')
+    lx.eval(
+        f'channel.create shapesize distance default:{diameter} username:"shape size"'
+    )
     lx.eval('channel.create flip boolean username:flip')
-    lx.eval('channel.create cablesteps integer scalar false 0.0 false 0.0 0.0 username:"cable steps"')
+    lx.eval(
+        'channel.create cablesteps integer scalar false 0.0 false 0.0 0.0 username:"cable steps"'
+    )
+    lx.eval(f'item.channel cablesteps "{DEFAULT_STEPS}"')
     lx.eval('channel.create materialtag string username:"material tag"')
-    lx.eval('')
-    lx.eval('')
-    lx.eval('')
+    lx.eval(f'item.channel materialtag "{material_tag_name}"')
+    lx.eval(f'channel.link add {{{cable.id}:shapesize}} {{{curve_sweep.id}:size}}')
+    lx.eval(f'channel.link add {{{cable.id}:flip}} {{{curve_sweep.id}:flip}}')
+    lx.eval(f'channel.link add {{{cable.id}:cablesteps}} {{{curve_sweep.id}:steps}}')
+    lx.eval(
+        f'channel.link add {{{cable.id}:materialtag}} {{{material_tag_node.id}:materialName}}'
+    )
+    # restore preset browser status
+    if not preset_browser_opened:
+        lx.eval(
+            'layout.createOrClose PresetBrowser presetBrowserPalette false Presets width:800 height:600 '
+            'persistent:true style:palette'
+        )
 
 
 def main():
-    selected_meshes = modo.Scene().selectedByType(itype=c.MESH_TYPE)
-    cable_shape = get_cable_shape()
+    selected_meshes = scene.selectedByType(itype=c.MESH_TYPE)
+    cable_shape = CableLive.get_cable_shape()
     for mesh in selected_meshes:
-        create_cable(curve=mesh, shape=cable_shape)
+        create_cable(curve_mesh=mesh, shape=cable_shape)
 
 
 if __name__ == '__main__':
+    scene = modo.Scene()
+    h3dd = H3dDebug(enable=True, file=replace_file_ext(scene.filename, ".log"))
     main()
