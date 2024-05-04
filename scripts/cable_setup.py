@@ -25,15 +25,15 @@ DEFAULT_STEPS = 24
 
 class LiveCable:
     def __init__(self, mesh: modo.Item) -> None:
-        self.shape_size = DEFAULT_DIAMETER
-        self.cable_steps = DEFAULT_STEPS
-        self.flip = False
-        self.material_tag = ''
+        self.shape_size = None
+        self.cable_steps = None
+        self.flip = None
+        self.material_tag = None
 
-    def decode_data_from_name(self):
+    def decode_name(self):
         ...
 
-    def encode_data_to_name(self):
+    def encode_name(self):
         ...
 
     def generate_cable(self):
@@ -46,7 +46,7 @@ class LiveCable:
     def create_cable_shape() -> modo.Item:
         lx.eval('layer.new')
         shape: modo.Item
-        (shape,) = scene.selectedByType(c.MESH_TYPE)
+        shape = scene.selectedByType(c.MESH_TYPE)[0]
         if not shape:
             raise RuntimeError('Error creating cable shape')
         lx.eval('tool.set prim.cylinder on')
