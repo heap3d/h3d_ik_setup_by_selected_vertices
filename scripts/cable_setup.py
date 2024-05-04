@@ -187,6 +187,7 @@ def main():
     selected_meshes = scene.selectedByType(itype=c.MESH_TYPE)
     cable_shape = CableLive.get_cable_shape()
     for mesh in selected_meshes:
+        # function to create live cable
         create_cable(curve_mesh=mesh, shape=cable_shape)
 
 
