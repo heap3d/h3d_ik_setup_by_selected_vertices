@@ -23,7 +23,7 @@ DEFAULT_DIAMETER = 0.01
 DEFAULT_STEPS = 24
 
 
-class CableLive:
+class LiveCable:
     def __init__(self, mesh: modo.Item) -> None:
         self.shape_size = DEFAULT_DIAMETER
         self.cable_steps = DEFAULT_STEPS
@@ -70,7 +70,7 @@ class CableLive:
             return scene.item(CABLE_SHAPE_NAME)
 
         except LookupError:
-            return CableLive.create_cable_shape()
+            return LiveCable.create_cable_shape()
 
     @staticmethod
     def is_general_curve(mesh):
@@ -103,7 +103,7 @@ def decode_name(name):
 
 
 def create_cable(curve_mesh, shape):
-    if not CableLive.is_general_curve(curve_mesh):
+    if not LiveCable.is_general_curve(curve_mesh):
         print(f'Cable creation skipped for mesh <{curve_mesh.name}>. No curve found.')
         return
     # stroe preset browser status
@@ -185,9 +185,8 @@ def create_cable(curve_mesh, shape):
 
 def main():
     selected_meshes = scene.selectedByType(itype=c.MESH_TYPE)
-    cable_shape = CableLive.get_cable_shape()
     for mesh in selected_meshes:
-        create_cable(curve_mesh=mesh, shape=cable_shape)
+        LiveCable(mesh=mesh).generate_cable()
 
 
 if __name__ == '__main__':
