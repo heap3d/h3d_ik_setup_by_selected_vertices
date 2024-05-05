@@ -30,7 +30,7 @@ DELIMITER = ':'
 ID_DIAMETER = 'd'
 ID_STEPS = 's'
 ID_FLIP = 'f'
-CABLE_NAME_SUFFIX = '_geo'
+CABLE_NAME_SUFFIX = '_cable'
 
 
 class CableLive:
