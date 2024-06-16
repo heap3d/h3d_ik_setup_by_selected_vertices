@@ -26,10 +26,16 @@ MAP_DIAMETER = 'diameter'
 MAP_STEPS = 'steps'
 MAP_FLIP = 'flip'
 MAP_MATERIAL = 'material'
+MAP_PROFILE_SIDES = 'sides'
+MAP_POLYGON_TYPE = 'type'
+MAP_DIAMETER_COMPENSATION = 'comp'
 DELIMITER = ':'
 ID_DIAMETER = 'd'
 ID_STEPS = 's'
 ID_FLIP = 'f'
+ID_PROFILE_SIDES = 'p'
+ID_POLYGON_TYPE = 't'
+ID_DIAMETER_COMPENSATION = 'c'
 CABLE_NAME_SUFFIX = '_cable'
 
 
@@ -40,10 +46,7 @@ class CableLive:
         self.flip = False
         self.material_tag = ''
 
-    def decode_data_from_name(self):
-        ...
-
-    def encode_data_to_name(self):
+    def encode_name(self):
         ...
 
     def generate_cable(self):
